@@ -1,0 +1,7 @@
+
+{
+    "handle" : "my-handle",
+    "password" : "thepasswordis12345",
+    "service" : "https://bsky.social",
+    "days" : 90
+}
