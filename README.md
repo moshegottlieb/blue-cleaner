@@ -42,3 +42,4 @@ Here is the sample config file, I'm sure you can figure out how to use it.
    node dist/src/index.js
    ```
 
+The new Swift project [Sky Cleaner](https://github.com/moshegottlieb/Sky-Cleaner) replaces this project.
