@@ -7,9 +7,9 @@
     "start": "node dist/src/index.js"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@atproto/api": "^0.16.2"
+    "@atproto/api": "^0.18.5"
   }
 }
