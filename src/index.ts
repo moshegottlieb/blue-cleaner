@@ -112,11 +112,13 @@ async function main(){
                 collection: collection.name,
                 cursor: res.data.cursor
             })
-        }
+    }
         
     }
-    console.log(`Deleted ${counter.like} likes, ${counter.post} posts, and ${counter.repost} reposts.`)
-
+    const output: string[] = []
+    
+    output.push(`Deleted ${counter.like} likes, ${counter.post} posts, and ${counter.repost} reposts.`)
+    
     // Fetch follower changes
     const followers = new Followers(agent)
     const changes = await followers.fetchChanges(config.previousFollowers)
@@ -126,12 +128,12 @@ async function main(){
     config.previousFollowers = changes.totalFollowers
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 4))
 
-    console.log(`You have ${changes.totalFollowers} followers.`)
+    output.push(`You have ${changes.totalFollowers} followers.`)
     if (changes.followersDelta !== undefined && changes.followersDelta !== 0) {
         const sign = changes.followersDelta > 0 ? '+' : ''
-        console.log(`${sign}${changes.followersDelta} since last run.`)
+        output.push(`${sign}${changes.followersDelta} since last run.`)
     }
-    console.log(`${changes.newFollowers} new, ${changes.unfollowed} unfollowed you.`)
+    output.push(`${changes.newFollowers} new, ${changes.unfollowed} unfollowed you.`)
 
     if (changes.newFollowers > 0) {
         const names = changes.newFollowersSummary.map(f => f.displayName || f.handle)
@@ -140,7 +142,7 @@ async function main(){
         if (remaining > 0) {
             line += ` and ${remaining} more.`
         }
-        console.log(line)
+        output.push(line)
     }
 
     if (changes.unfollowed > 0) {
@@ -150,7 +152,9 @@ async function main(){
         if (remaining > 0) {
             line += ` and ${remaining} more.`
         }
-        console.log(line)
+        output.push(line)
     }
+
+    console.log(output.join('<br/>'))
 }
 
