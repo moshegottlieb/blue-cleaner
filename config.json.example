@@ -3,5 +3,6 @@
     "handle" : "my-handle",
     "password" : "thepasswordis12345",
     "service" : "https://bsky.social",
-    "days" : 90
+    "days" : 90,
+    "previousFollowers" : 0
 }

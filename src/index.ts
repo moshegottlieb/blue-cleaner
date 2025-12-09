@@ -1,16 +1,26 @@
 import { AtpAgent, AppBskyFeedPost, AppBskyFeedLike, AtUri, AppBskyFeedRepost } from '@atproto/api'
 import type { Record as ListRecord } from '@atproto/api/src/client/types/com/atproto/repo/listRecords'
+import { Followers } from './followers'
+import * as fs from 'fs'
+import * as path from 'path'
 
+// Config file is in the project root (parent of dist)
+const CONFIG_PATH = path.join(__dirname, '../config.json')
 
+interface ConfigFile {
+    handle: string
+    password: string
+    service: string
+    days: number
+    previousFollowers?: number
+}
 
+const config: ConfigFile = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'))
 
-import * as Config from '../config.json';
-
-
-const USER = Config.handle
-const PASS = Config.password
-const SERVICE = Config.service
-const DAYS = Config.days 
+const USER = config.handle
+const PASS = config.password
+const SERVICE = config.service
+const DAYS = config.days 
 
 const OLDEST = new Date()
 OLDEST.setDate(OLDEST.getDate() - DAYS)
@@ -107,5 +117,40 @@ async function main(){
     }
     console.log(`Deleted ${counter.like} likes, ${counter.post} posts, and ${counter.repost} reposts.`)
 
+    // Fetch follower changes
+    const followers = new Followers(agent)
+    const changes = await followers.fetchChanges(config.previousFollowers)
+    await followers.close()
+
+    // Save the new follower count to config
+    config.previousFollowers = changes.totalFollowers
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 4))
+
+    console.log(`You have ${changes.totalFollowers} followers.`)
+    if (changes.followersDelta !== undefined && changes.followersDelta !== 0) {
+        const sign = changes.followersDelta > 0 ? '+' : ''
+        console.log(`${sign}${changes.followersDelta} since last run.`)
+    }
+    console.log(`${changes.newFollowers} new, ${changes.unfollowed} unfollowed you.`)
+
+    if (changes.newFollowers > 0) {
+        const names = changes.newFollowersSummary.map(f => f.displayName || f.handle)
+        const remaining = changes.newFollowers - names.length
+        let line = 'New followers: ' + names.join(', ')
+        if (remaining > 0) {
+            line += ` and ${remaining} more.`
+        }
+        console.log(line)
+    }
+
+    if (changes.unfollowed > 0) {
+        const names = changes.unfollowedSummary.map(f => f.displayName || f.handle)
+        const remaining = changes.unfollowed - names.length
+        let line = 'Unfollowed you: ' + names.join(', ')
+        if (remaining > 0) {
+            line += ` and ${remaining} more.`
+        }
+        console.log(line)
+    }
 }
 
