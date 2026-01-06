@@ -147,6 +147,9 @@ export class Followers {
             'SELECT COUNT(*) as count FROM followers WHERE updated = 0'
         )
 
+        // Delete unfollowers so they don't appear again in subsequent runs
+        await this.run('DELETE FROM followers WHERE updated = 0')
+
         return {
             followers: followersCount,
             totalFollowers,
