@@ -136,25 +136,22 @@ async function main(){
     output.push(`${changes.newFollowers} new, ${changes.unfollowed} unfollowed you.`)
 
     if (changes.newFollowers > 0) {
-        const names = changes.newFollowersSummary.map(f => f.displayName || f.handle)
-        const remaining = changes.newFollowers - names.length
-        let line = 'New followers: ' + names.join(', ')
-        if (remaining > 0) {
-            line += ` and ${remaining} more.`
-        }
-        output.push(line)
+        const names = changes.newFollowersSummary.map(f => 
+            f.displayName 
+                ? `${f.displayName} - https://bsky.app/profile/${f.handle}`
+                : `https://bsky.app/profile/${f.handle}`
+        )
+        output.push('New followers:<br/>' + names.join('<br/>'))
     }
 
     if (changes.unfollowed > 0) {
-        const names = changes.unfollowedSummary.map(f => f.displayName || f.handle)
-        const remaining = changes.unfollowed - names.length
-        let line = 'Unfollowed you: ' + names.join(', ')
-        if (remaining > 0) {
-            line += ` and ${remaining} more.`
-        }
-        output.push(line)
+        const names = changes.unfollowedSummary.map(f => 
+            f.displayName 
+                ? `${f.displayName} - https://bsky.app/profile/${f.handle}`
+                : `https://bsky.app/profile/${f.handle}`
+        )
+        output.push('Unfollowed you:<br/>' + names.join('<br/>'))
     }
 
     console.log(output.join('<br/>'))
 }
-
