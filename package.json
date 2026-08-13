@@ -1,17 +1,16 @@
 {
   "name": "blue-cleaner",
   "version": "1.0.0",
-  "main": "dist/src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node --disable-warning=ExperimentalWarning dist/index.js"
   },
   "devDependencies": {
-    "@types/sqlite3": "^3.1.11",
-    "typescript": "^5.9.3"
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@atproto/api": "^0.18.5",
-    "sqlite3": "^5.1.7"
+    "@atproto/api": "^0.20.39"
   }
 }

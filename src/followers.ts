@@ -1,5 +1,5 @@
 import { AtpAgent } from '@atproto/api'
-import sqlite3 from 'sqlite3'
+import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
 
 export interface Follower {
     did: string
@@ -22,38 +22,23 @@ export interface FollowerChanges {
 
 export class Followers {
     private agent: AtpAgent
-    private db: sqlite3.Database
+    private db: DatabaseSync
 
     constructor(agent: AtpAgent, dbPath: string = 'blue.db') {
         this.agent = agent
-        this.db = new sqlite3.Database(dbPath)
+        this.db = new DatabaseSync(dbPath)
     }
 
-    private run(sql: string, params: any[] = []): Promise<sqlite3.RunResult> {
-        return new Promise((resolve, reject) => {
-            this.db.run(sql, params, function (err) {
-                if (err) reject(err)
-                else resolve(this)
-            })
-        })
+    private run(sql: string, params: SQLInputValue[] = []): void {
+        this.db.prepare(sql).run(...params)
     }
 
-    private get<T>(sql: string, params: any[] = []): Promise<T> {
-        return new Promise((resolve, reject) => {
-            this.db.get(sql, params, (err, row) => {
-                if (err) reject(err)
-                else resolve(row as T)
-            })
-        })
+    private get<T>(sql: string, params: SQLInputValue[] = []): T {
+        return this.db.prepare(sql).get(...params) as T
     }
 
-    private all<T>(sql: string, params: any[] = []): Promise<T[]> {
-        return new Promise((resolve, reject) => {
-            this.db.all(sql, params, (err, rows) => {
-                if (err) reject(err)
-                else resolve(rows as T[])
-            })
-        })
+    private all<T>(sql: string, params: SQLInputValue[] = []): T[] {
+        return this.db.prepare(sql).all(...params) as T[]
     }
 
     async fetchChanges(previousFollowers?: number): Promise<FollowerChanges> {
@@ -63,10 +48,10 @@ export class Followers {
         }
 
         // Mark all existing followers as not updated
-        await this.run('UPDATE followers SET updated = 0')
+        this.run('UPDATE followers SET updated = 0')
 
         // Count current followers before fetching
-        const { count: previousCount } = await this.get<{ count: number }>('SELECT COUNT(*) as count FROM followers')
+        const { count: previousCount } = this.get<{ count: number }>('SELECT COUNT(*) as count FROM followers')
 
         // Fetch all followers from Bluesky
         let cursor: string | undefined
@@ -81,7 +66,7 @@ export class Followers {
 
             for (const follower of res.data.followers) {
                 const displayName = follower.displayName?.trim() || null
-                await this.run(
+                this.run(
                     `INSERT INTO followers (did, handle, displayName, avatar, updated, created)
                      VALUES (?, ?, ?, ?, 1, ?)
                      ON CONFLICT(did) DO UPDATE SET
@@ -107,10 +92,10 @@ export class Followers {
         const totalFollowers = profile.data.followersCount ?? 0
 
         // Get the new follower count
-        const { count: followersCount } = await this.get<{ count: number }>('SELECT COUNT(*) as count FROM followers WHERE updated = 1')
+        const { count: followersCount } = this.get<{ count: number }>('SELECT COUNT(*) as count FROM followers WHERE updated = 1')
 
         // Get new followers (created in this run)
-        const newFollowersRows = await this.all<{ did: string; handle: string; displayName: string | null; avatar: string | null; created: string }>(
+        const newFollowersRows = this.all<{ did: string; handle: string; displayName: string | null; avatar: string | null; created: string }>(
             `SELECT did, handle, displayName, avatar, created 
              FROM followers 
              WHERE updated = 1 AND created = ?
@@ -124,13 +109,13 @@ export class Followers {
             avatar: row.avatar ?? undefined,
             created: new Date(row.created)
         }))
-        const { count: newFollowersCount } = await this.get<{ count: number }>(
+        const { count: newFollowersCount } = this.get<{ count: number }>(
             'SELECT COUNT(*) as count FROM followers WHERE updated = 1 AND created = ?',
             [now]
         )
 
         // Get unfollowed (updated = 0)
-        const unfollowedRows = await this.all<{ did: string; handle: string; displayName: string | null; avatar: string | null; created: string }>(
+        const unfollowedRows = this.all<{ did: string; handle: string; displayName: string | null; avatar: string | null; created: string }>(
             `SELECT did, handle, displayName, avatar, created 
              FROM followers 
              WHERE updated = 0
@@ -143,12 +128,12 @@ export class Followers {
             avatar: row.avatar ?? undefined,
             created: new Date(row.created)
         }))
-        const { count: unfollowedCount } = await this.get<{ count: number }>(
+        const { count: unfollowedCount } = this.get<{ count: number }>(
             'SELECT COUNT(*) as count FROM followers WHERE updated = 0'
         )
 
         // Delete unfollowers so they don't appear again in subsequent runs
-        await this.run('DELETE FROM followers WHERE updated = 0')
+        this.run('DELETE FROM followers WHERE updated = 0')
 
         return {
             followers: followersCount,
@@ -162,12 +147,7 @@ export class Followers {
         }
     }
 
-    close(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.db.close((err) => {
-                if (err) reject(err)
-                else resolve()
-            })
-        })
+    close(): void {
+        this.db.close()
     }
 }

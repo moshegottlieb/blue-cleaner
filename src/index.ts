@@ -1,6 +1,7 @@
-import { AtpAgent, AppBskyFeedPost, AppBskyFeedLike, AtUri, AppBskyFeedRepost } from '@atproto/api'
-import type { Record as ListRecord } from '@atproto/api/src/client/types/com/atproto/repo/listRecords'
+import { AtpAgent, AppBskyFeedPost, AppBskyFeedLike, AtUri, AppBskyFeedRepost, ComAtprotoRepoListRecords } from '@atproto/api'
 import { Followers } from './followers'
+
+type ListRecord = ComAtprotoRepoListRecords.Record
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -122,7 +123,7 @@ async function main(){
     // Fetch follower changes
     const followers = new Followers(agent)
     const changes = await followers.fetchChanges(config.previousFollowers)
-    await followers.close()
+    followers.close()
 
     // Save the new follower count to config
     config.previousFollowers = changes.totalFollowers
