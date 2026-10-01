@@ -4,7 +4,10 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node --disable-warning=ExperimentalWarning dist/index.js"
+    "start": "node --disable-warning=ExperimentalWarning dist/index.js",
+    "stick": "node --disable-warning=ExperimentalWarning dist/sticky-cli.js stick",
+    "unstick": "node --disable-warning=ExperimentalWarning dist/sticky-cli.js unstick",
+    "sticky-list": "node --disable-warning=ExperimentalWarning dist/sticky-cli.js list"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

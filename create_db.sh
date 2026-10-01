@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS followers (
     updated NUMBER NOT NULL DEFAULT 1,
     created TEXT NOT NULL DEFAULT (DATETIME('now'))
 );
+CREATE TABLE IF NOT EXISTS sticky (
+    uri TEXT PRIMARY KEY NOT NULL,
+    created TEXT NOT NULL DEFAULT (DATETIME('now'))
+);
 EOF
 
 echo "Database 'blue.db' created successfully."

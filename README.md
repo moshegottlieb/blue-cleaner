@@ -25,6 +25,10 @@ Here is the sample config file, I'm sure you can figure out how to use it.
 ## Getting Started
 
 1. Create `config.json` and edit it, you may want to copy `config.json.example` to start out
+1. Create the database:
+   ```bash
+   ./create_db.sh
+   ```
 1. Install dependencies:
    ```bash
    npm install
@@ -39,7 +43,22 @@ Here is the sample config file, I'm sure you can figure out how to use it.
    ```
    or
    ```bash
-   node dist/src/index.js
+   node dist/index.js
    ```
+
+## Sticky posts
+
+Sticky posts are never deleted, and neither are any replies under them (including replies added after the post was stuck).  
+Your pinned post, if you have one, is always treated as sticky.  
+Use the post URL as it appears on bsky.app:
+
+```bash
+npm run stick "https://bsky.app/profile/my-handle/post/3abcdefghijkl"
+npm run unstick "https://bsky.app/profile/my-handle/post/3abcdefghijkl"
+npm run sticky-list
+```
+
+`unstick` also removes any stuck posts under the given post.  
+If you're upgrading from an older version, run `./create_db.sh` again to add the `sticky` table to your existing database.
 
 The new Swift project [Sky Cleaner](https://github.com/moshegottlieb/Sky-Cleaner) replaces this project.

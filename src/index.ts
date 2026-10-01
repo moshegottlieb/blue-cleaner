@@ -1,26 +1,12 @@
-import { AtpAgent, AppBskyFeedPost, AppBskyFeedLike, AtUri, AppBskyFeedRepost, ComAtprotoRepoListRecords } from '@atproto/api'
+import { AppBskyFeedPost, AppBskyFeedLike, AtUri, AppBskyFeedRepost, ComAtprotoRepoListRecords } from '@atproto/api'
 import { Followers } from './followers'
+import { Sticky } from './sticky'
+import { loadConfig, saveConfig, login } from './config'
 
 type ListRecord = ComAtprotoRepoListRecords.Record
-import * as fs from 'fs'
-import * as path from 'path'
 
-// Config file is in the project root (parent of dist)
-const CONFIG_PATH = path.join(__dirname, '../config.json')
+const config = loadConfig()
 
-interface ConfigFile {
-    handle: string
-    password: string
-    service: string
-    days: number
-    previousFollowers?: number
-}
-
-const config: ConfigFile = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'))
-
-const USER = config.handle
-const PASS = config.password
-const SERVICE = config.service
 const DAYS = config.days 
 
 const OLDEST = new Date()
@@ -36,19 +22,13 @@ main()
     });
 
 async function main(){
-    const agent = new AtpAgent({ service: SERVICE })
-    await agent.login({
-        identifier: USER,
-        password: PASS
-    })
-    const session_did = agent.session?.did
-    if (!session_did) {
-        throw new Error("Failed to log in, did is undefined")
-    }
-    const session_handle = agent.session?.handle
-    if (!session_handle) {
-        throw new Error("Failed to log in, handle is undefined")
-    }
+    const { agent, did: session_did, handle: session_handle } = await login(config)
+
+    // Sticky posts (and the pinned post), with all replies under them, are never deleted
+    const sticky = new Sticky(agent)
+    const keep = await sticky.collect(session_did)
+    sticky.close()
+    let kept = 0
     const collections = [
         {
             name: 'app.bsky.feed.post',
@@ -91,6 +71,10 @@ async function main(){
             for (const record of res.data.records) {
                 let date = collection.resolver(record)
                 if (date !== undefined && date < OLDEST){
+                    if (keep.has(record.uri)) {
+                        kept++
+                        continue
+                    }
                     const at_uri = new AtUri(record.uri)
                     await agent.com.atproto.repo.deleteRecord({
                         repo: session_handle,
@@ -119,6 +103,9 @@ async function main(){
     const output: string[] = []
     
     output.push(`Deleted ${counter.like} likes, ${counter.post} posts, and ${counter.repost} reposts.`)
+    if (kept > 0) {
+        output.push(`Kept ${kept} sticky posts.`)
+    }
     
     // Fetch follower changes
     const followers = new Followers(agent)
@@ -127,7 +114,7 @@ async function main(){
 
     // Save the new follower count to config
     config.previousFollowers = changes.totalFollowers
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 4))
+    saveConfig(config)
 
     output.push(`You have ${changes.totalFollowers} followers.`)
     if (changes.followersDelta !== undefined && changes.followersDelta !== 0) {
