@@ -29,6 +29,7 @@ async function main(){
     const keep = await sticky.collect(session_did)
     sticky.close()
     let kept = 0
+    let keptLikes = 0
     const collections = [
         {
             name: 'app.bsky.feed.post',
@@ -43,6 +44,11 @@ async function main(){
             resolver : (record:ListRecord) :Date => {
                 const like = record.value as AppBskyFeedLike.Record
                 return new Date(like.createdAt)
+            },
+            // The post this like is on
+            subject : (record:ListRecord) :string => {
+                const like = record.value as AppBskyFeedLike.Record
+                return like.subject.uri
             },
             type : 'like' as CounterKey
         },
@@ -75,6 +81,12 @@ async function main(){
                         kept++
                         continue
                     }
+                    // Likes on sticky threads are kept too
+                    const subject = collection.subject?.(record)
+                    if (subject !== undefined && keep.has(subject)) {
+                        keptLikes++
+                        continue
+                    }
                     const at_uri = new AtUri(record.uri)
                     await agent.com.atproto.repo.deleteRecord({
                         repo: session_handle,
@@ -105,6 +117,9 @@ async function main(){
     output.push(`Deleted ${counter.like} likes, ${counter.post} posts, and ${counter.repost} reposts.`)
     if (kept > 0) {
         output.push(`Kept ${kept} sticky posts.`)
+    }
+    if (keptLikes > 0) {
+        output.push(`Kept ${keptLikes} likes on sticky posts.`)
     }
     
     // Fetch follower changes
