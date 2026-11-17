@@ -49,7 +49,7 @@ Here is the sample config file, I'm sure you can figure out how to use it.
 ## Sticky posts
 
 Sticky posts are never deleted, and neither are any replies under them (including replies added after the post was stuck).  
-Your likes on a sticky post, or on any reply under it, are kept as well.  
+Your likes and reposts of a sticky post, or of any reply under it, are kept as well.  
 Your pinned post, if you have one, is always treated as sticky.  
 Use the post URL as it appears on bsky.app:
 

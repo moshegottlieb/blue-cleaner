@@ -29,7 +29,8 @@ async function main(){
     const keep = await sticky.collect(session_did)
     sticky.close()
     let kept = 0
-    let keptLikes = 0
+    // Likes and reposts kept because they are on a sticky thread
+    const keptOn: Record<string, number> = { like: 0, repost: 0 }
     const collections = [
         {
             name: 'app.bsky.feed.post',
@@ -58,6 +59,11 @@ async function main(){
                 const repost = record.value as AppBskyFeedRepost.Record
                 return new Date(repost.createdAt)
             },
+            // The post this repost is of
+            subject : (record:ListRecord) :string => {
+                const repost = record.value as AppBskyFeedRepost.Record
+                return repost.subject.uri
+            },
             type : 'repost' as CounterKey
         }
     ]
@@ -81,10 +87,10 @@ async function main(){
                         kept++
                         continue
                     }
-                    // Likes on sticky threads are kept too
+                    // Likes and reposts of posts in sticky threads are kept too
                     const subject = collection.subject?.(record)
                     if (subject !== undefined && keep.has(subject)) {
-                        keptLikes++
+                        keptOn[collection.type]++
                         continue
                     }
                     const at_uri = new AtUri(record.uri)
@@ -118,8 +124,8 @@ async function main(){
     if (kept > 0) {
         output.push(`Kept ${kept} sticky posts.`)
     }
-    if (keptLikes > 0) {
-        output.push(`Kept ${keptLikes} likes on sticky posts.`)
+    if (keptOn.like > 0 || keptOn.repost > 0) {
+        output.push(`Kept ${keptOn.like} likes and ${keptOn.repost} reposts on sticky posts.`)
     }
     
     // Fetch follower changes
